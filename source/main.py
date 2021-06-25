@@ -1,5 +1,5 @@
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from Ui_dialog1 import Ui_Dialog1
 from Ui_dialog3 import Ui_Dialog3
 from Ui_dialog4 import Ui_Dialog4
@@ -12,16 +12,21 @@ from Ui_dialog10 import Ui_Dialog10
 from Ui_dialog11 import Ui_Dialog11
 from Ui_dialog12 import Ui_Dialog12
 from Ui_dialog13 import Ui_Dialog13
+from Ui_dialog2 import Ui_dialog2
 from Ui_mainWin import Ui_MainWindow
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+
 import sys
-from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QGridLayout
 import pymysql
 import pandas as pd
 from sqlalchemy import create_engine
 import datetime
 import numpy as np
 import datetime
-import random
 import time
 import serial
 
@@ -388,9 +393,9 @@ def querySensorData_twoDate(Datef="",Datee=""):
 def insertSensorData(collectTime, carFlow1=0, carFlow2=0):
     """
     插入传感器采集到的数据
-    :param collectTime: 采集时间(2021-5-22 23:18:21)
-    :param carFlow1: 东西方向的车流量，默认为0
-    :param carFlow2: 南北方向的车流量，默认为0
+    :param collectTime: string 采集时间(2021-5-22 23:18:21)
+    :param carFlow1: int 东西方向的车流量，默认为0
+    :param carFlow2: int 南北方向的车流量，默认为0
     :return: none
     """
     # mysql语句
@@ -702,7 +707,7 @@ def updateFKDomain(ID, Name, object):
 
 
 # 查询模糊集表
-def queryFKSet(ID="", Name="",DID=""):
+def queryFKSet(ID="", Name="", DID=""):
     """
     模糊集的查询函数
     :param ID: 整数
@@ -711,11 +716,11 @@ def queryFKSet(ID="", Name="",DID=""):
     :return: DataFrame
     """
     flags = [1, 1, 1]
-    if ID=="":
+    if ID == "":
         flags[0] = 0
-    if Name=="":
+    if Name == "":
         flags[1] = 0
-    if DID=="":
+    if DID == "":
         flags[2] = 0
 
     # 转成字符串
@@ -1094,7 +1099,7 @@ def queryGT(ID="", Name=""):
 # 新增可信度前提结论对应表
 def insertGT(ID, Name, UpValue,DownValue):
     # mysql语句
-    sql_insert = "insert into 可信度前提结论对应表(null" + ",\'" + str(Name) + "\'," + UpValue + "," + DownValue +");"
+    sql_insert = "insert into 可信度前提结论对应表 values(null" + ",\'" + str(Name) + "\'," + UpValue + "," + DownValue +");"
     # 执行语句
     con.execute(sql_insert)
     print("成功新增一条可信度前提结论对应信息")
@@ -1141,10 +1146,48 @@ def updateGT(ID, Name, UpValue,DownValue):
     return msg
 
 
-# 获取当前系统时间 年-月-日 时:分:秒
+def queryResult():
+    sql_query = 'select * from 结果数据表;'
+    # 使用pandas的read_sql_query函数执行SQL语句，并存入DataFrame
+    df_read = pd.read_sql_query(sql_query, con)
+    # print(df_read)
+    return df_read
+
+
+def insertResult(direct, carNum, lightTime):
+    """
+    插入结果数据表
+    :param direct: int 方向
+    :param carNum: int 车流量
+    :param lightTime: int 绿灯时长
+    :return: None
+    """
+    # mysql语句
+    sql_insert = "insert into 结果数据表 values(null" + "," + str(direct) + "," + str(carNum) + "," + str(lightTime) + ");"
+    # 执行语句
+    con.execute(sql_insert)
+    print("成功新增一条结果数据")
+
+
+def clearResult():
+    """
+    清空结果数据表
+    :return: None
+    """
+    # mysql语句
+    sql_delete = "delete from 结果数据表;"
+    # 执行语句
+    con.execute(sql_delete)
+    print("已清空结果数据")
+
+
 def getDateTime():
+    """
+    获取当前系统时间
+    :return: string类型 年-月-日 时:分:秒
+    """
     now = datetime.datetime.now()
-    now_format = now.strftime("%Y-%m-%d")
+    now_format = now.strftime("%Y-%m-%d %H:%M:%S")
     return now_format
 
 
@@ -1175,6 +1218,11 @@ class childWin1(QDialog):
         yellowTime=str(self.child.lineEdit_3.text())
         greenTime=str(self.child.lineEdit_4.text())
         return circleTime,yellowTime,greenTime
+
+
+
+
+
 
 
 # 数据维护
@@ -1962,15 +2010,15 @@ def Cre_Inference_ID(ID):
 # 输入:车流量
 def Cre_Inference_car_num(car_num):
     # 车流量数据可信度
-    car_num_CS=0.9
+    car_num_CS = 0.9
     # 车流量转换为离散
     car_res = Cre_inference_to_disperse(car_num)
 
     # 获取对应可信度知识
-    dataCK=queryCK("",car_res,"","","")
-    lamba=dataCK.at[0,"知识可信度"]
-    cf_CK=dataCK.at[0,"前提可信度"]
-    conclusion=dataCK.at[0,"结论"]
+    dataCK = queryCK("", car_res, "", "", "")
+    lamba = dataCK.at[0, "知识可信度"]
+    cf_CK = dataCK.at[0, "前提可信度"]
+    conclusion = dataCK.at[0, "结论"]
 
     # 判断事实是否可用
     cf_CS = -1
@@ -2047,7 +2095,7 @@ def close_degree(sets, dire):
                 if close_d < float(temp):
                     close_d = float(temp)
                     name_set = name
-        print(name_set)
+        # print(name_set)
         if name_set != "":
             data2 = queryFK("", name_set, "", "", "")
             temp2 = data2.at[0, "λ"]
@@ -2055,21 +2103,21 @@ def close_degree(sets, dire):
             if close_d >= temp2:
                 return temp_max_mat_id
     else:
-        data=queryFKSet()
-        for index,row in data.iterrows():
-            ID=str(row["ID"])
-            name=str(row["名称"])
-            objects=str(row["object"])
+        data = queryFKSet()
+        for index, row in data.iterrows():
+            ID = str(row["ID"])
+            name = str(row["名称"])
+            objects = str(row["object"])
             if name[0:5] == "南北车流量":
-                temp=close_degree_C(sets,objects)
+                temp = close_degree_C(sets, objects)
                 if close_d < float(temp):
-                    close_d=float(temp)
-                    name_set=name
-        print(name_set)
+                    close_d = float(temp)
+                    name_set = name
+        # print(name_set)
         if name_set != "":
-            data2=queryFK("",name_set,"","","")
-            temp2=data2.at[0,"λ"]
-            temp_max_mat_id=data2.at[0, "模糊矩阵ID"]
+            data2 = queryFK("", name_set, "", "", "")
+            temp2 = data2.at[0, "λ"]
+            temp_max_mat_id = data2.at[0, "模糊矩阵ID"]
             if close_d >= temp2:
                 return temp_max_mat_id
 
@@ -2098,19 +2146,19 @@ def find_max_index(list_cin):
 # 返回B对应论域的对应index，两个：最小，最大
 def compete_end_id(sets, mat_id):
     # 处理产生模糊集，最后多出一个；，去除空元素
-    str1=sets.split(";")
-    str1 = [x.strip() for x in str1 if x.strip()!='']
+    str1 = sets.split(";")
+    str1 = [x.strip() for x in str1 if x.strip() != '']
 
     # 查找模糊矩阵数据库的对应ID的矩阵
-    data = queryFKMat(mat_id,"","")
-    temp = data.at[0,"object"]
+    data = queryFKMat(mat_id, "", "")
+    temp = data.at[0, "object"]
 
     # 切片
-    temp2_list=temp.split(";")
+    temp2_list = temp.split(";")
     line = len(temp2_list)
 
     # 构造二维矩阵
-    list_two=[]
+    list_two = []
     for i in range(line):
         list_two_temp=temp2_list[i].split(",")
         list_two.append(list_two_temp)
@@ -2121,16 +2169,16 @@ def compete_end_id(sets, mat_id):
 
     # 计算B',str_b为B’对应数组
     line2 = len(list_twoT)
-    str_b=""
+    str_b = ""
     for i in range(line2):
-        len_one_line=len(list_twoT[0])
-        max_num=-1
+        len_one_line = len(list_twoT[0])
+        max_num = -1
         for j in range(len_one_line):
-            temp3=min(float(str1[j]),float(list_twoT[i][j]))
-            max_num=max(temp3,max_num)
-        str_b=str_b+str(max_num)+" "
-    str_b=str_b.split(" ")
-    str_b = [x.strip() for x in str_b if x.strip()!='']
+            temp3 = min(float(str1[j]), float(list_twoT[i][j]))
+            max_num = max(temp3, max_num)
+        str_b = str_b + str(max_num) + " "
+    str_b = str_b.split(" ")
+    str_b = [x.strip() for x in str_b if x.strip() != '']
     print(str_b)
 
     # 查找最大隶属度，返回对应B模糊集的index
@@ -2146,7 +2194,7 @@ def compete_light_time(cin, alpha, dire):
     B_domain_index_min, B_domain_index_max = compete_end_id(sets, mat_id)
 
     # 查询B模糊集
-    data=queryFKDomain("", "绿灯时长")
+    data = queryFKDomain("", "绿灯时长")
     temp = data.at[0, "object"]
     temp = temp.split(";")
     # 根据index获取对应绿灯时长
@@ -2186,7 +2234,14 @@ def analysis_data_form_down():
 ##############################################################
 
 
-def inference(direction, carNum, alpha):
+def inference(direction, carNum):
+    """
+    进行推理
+    :param direction: int，方向
+    :param carNum: int，车流量
+    :return: 绿灯时长（float）和 推理结果（string）
+    """
+    alpha = 10
     if direction == 0:
         try:
             res = compete_light_time(carNum, alpha, 0)
@@ -2209,6 +2264,59 @@ def emit_start_signal():
     ser.write(start.encode(encoding='gbk'))
 
 
+# 推理线程类
+class InferenceThread(QtCore.QThread):
+    #  通过类成员对象定义信号对象
+    signal = QtCore.pyqtSignal(int, int)
+
+    def __init__(self):
+        super(InferenceThread, self).__init__()
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        print("这是推理线程")
+        clearResult()
+        emit_start_signal()
+        cnt = 0
+        while 1:
+            # 解析下位机传上来的数据,返回下位机数据长度、车辆方向、车辆数
+            if ser.in_waiting > 0:
+                length, directionFromLow, carNum = analysis_data_form_down()
+
+                # 将收集到的数据存入传感器数据库
+                # if directionFromLow == 0:
+                #     insertSensorData(getDateTime(), carNum, 0)
+                # else:
+                #     insertSensorData(getDateTime(), 0, carNum)
+
+                lightTime, msg = inference(directionFromLow, carNum)
+                lightTime = round(lightTime)
+
+                # 发送信号给UI界面
+                # 注意这里与_signal = pyqtSignal(str)中的类型相同
+                self.signal.emit(carNum, lightTime)
+
+                # 调试信息
+                if directionFromLow == 0:
+                    print("\n【info】东西方向车流量为：", carNum, "因此将绿灯时长调整为：", lightTime, "\n")
+                else:
+                    print("\n【info】南北方向车流量为：", carNum, "因此将绿灯时长调整为：", lightTime, "\n")
+
+                # 将传感器获得和推理的结果数据存入数据库
+                insertResult(directionFromLow, carNum, lightTime)
+
+                # 传输数据包到下位机
+                put_data_to_down(lightTime, directionFromLow)
+
+            else:
+                cnt += 1
+                if cnt > 200000:
+                    print("waiting data.......")
+                    cnt = 0
+
+
 # 推理功能
 class childWin10(QDialog):
     def __init__(self):
@@ -2216,73 +2324,177 @@ class childWin10(QDialog):
         self.child = Ui_Dialog10()
         self.child.setupUi(self)
         self.child.setupUi(self)
-        # 手动输入车辆数
-        # self.child.pushButton.clicked.connect(self.inference)
-        # 自动生成车辆数
+        self.thread = None  # 初始化线程
         self.child.pushButton.clicked.connect(self.random_inference)
 
     def random_inference(self):
-        emit_start_signal()
-        cnt = 0
-        while 1:
-            # 解析下位机传上来的数据,返回下位机数据长度、车辆方向、车辆数
-            if ser.in_waiting > 0:
-                length, directionFromLow, carNum = analysis_data_form_down()
-            # if length != 0:
-                # cnt = cnt + 1
-                self.child.lineEdit.setText(str(carNum))
+        # 创建线程
+        self.thread = InferenceThread()
+        # 连接信号
+        self.thread.signal.connect(self.call_backlog)  # 进程连接回传到GUI的事件
+        # 开始线程
+        self.thread.start()
 
-                # 进行推理
-                lightTime = self.inference(directionFromLow, carNum)
-                lightTime = round(lightTime)
-                # res = str(self.child.lineEdit_2.text())
-                # res = round(float(res))
-                # res = str(res)
-                print("方向(0代表东西，1代表南北）:", directionFromLow, "车流量:", carNum)
-                print("方向(0代表东西，1代表南北）:", directionFromLow, "绿灯时长:", lightTime)
-                # 传输数据包到下位机
-                put_data_to_down(lightTime, directionFromLow)
-                # if cnt == 2:
-                #     break
+    def call_backlog(self, carNum, lightTime):
+        self.child.lineEdit.setText(str(carNum))
+        self.child.lineEdit_2.setText(str(lightTime))
+
+
+class Figure_Canvas(FigureCanvas):
+    def __init__(self, parent=None, width=3.9, height=2.7, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=100)
+        super(Figure_Canvas, self).__init__(self.fig)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlim(0, 10)
+        self.ax.set_ylim(0, 40)
+        self.ax2 = self.ax.twinx()
+        self.ax2.set_ylim(0, 75)
+
+
+class drawThread(QtCore.QThread):
+    #  通过类成员对象定义信号对象
+    signal = QtCore.pyqtSignal(list, list, list)
+
+    def __init__(self):
+        super(drawThread, self).__init__()
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        print("这是绘制折线图线程")
+        while True:
+            df = queryResult()
+            direct = list(df['方向'])
+            carnum = list(df['车流量'])
+            lighttime = list(df['绿灯时长'])
+            self.signal.emit(direct, carnum, lighttime)  # 发送信号
+            time.sleep(1)
+
+
+class childWin2(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.child = Ui_dialog2()
+        self.child.setupUi(self)
+
+        self.x1 = []
+        self.x2 = []
+        self.direct = []
+        self.carnum1 = []
+        self.carnum2 = []
+        self.lighttime1 = []
+        self.lighttime2 = []
+
+        self.init()
+        self.child.pushButton.clicked.connect(self.start_thread)
+
+    def init(self):
+        self.LineFigure1 = Figure_Canvas()
+        self.LineFigureLayout1 = QGridLayout(self.child.LineDisplayGB1)
+        self.LineFigureLayout1.addWidget(self.LineFigure1)
+
+        self.LineFigure2 = Figure_Canvas()
+        self.LineFigureLayout2 = QGridLayout(self.child.LineDisplayGB2)
+        self.LineFigureLayout2.addWidget(self.LineFigure2)
+
+        self.LineFigure3 = Figure_Canvas()
+        self.LineFigureLayout3 = QGridLayout(self.child.LineDisplayGB3)
+        self.LineFigureLayout3.addWidget(self.LineFigure3)
+
+        self.LineFigure4 = Figure_Canvas()
+        self.LineFigureLayout4 = QGridLayout(self.child.LineDisplayGB4)
+        self.LineFigureLayout4.addWidget(self.LineFigure4)
+
+    def start_thread(self):
+        self.inferencethread = InferenceThread()
+        self.inferencethread.start()
+
+        self.drawthread = drawThread()  # 多线程实例化
+        self.drawthread.signal.connect(self.Init_Widgets)  # 线程启动槽函数
+        self.drawthread.start()  # 启动线程
+
+    def Init_Widgets(self, direct_list, carnum_list, lighttime_list):
+        self.PrepareSamples(direct_list, carnum_list, lighttime_list)
+        self.PrepareLineCanvas1()
+        self.PrepareLineCanvas2()
+        self.PrepareLineCanvas3()
+        self.PrepareLineCanvas4()
+
+    def set_ax(self, figCanvas):
+        figCanvas.ax.set_xlim(0, 10)
+        figCanvas.ax.set_ylim(0, 40)
+        figCanvas.ax2.set_ylim(0, 75)
+
+    def PrepareSamples(self, direct_list, carnum_list, lighttime_list):
+        # 根据方向来选择放入对应的位置
+        # 东西方向的数据放入carnum1, lighttime1
+        # 南北方向的数据放入carnum2，lighttime2
+        carnum1 = []
+        carnum2 = []
+        lighttime1 = []
+        lighttime2 = []
+
+        for i in range(len(direct_list)):
+            if direct_list[i] == 0:
+                carnum1.append(carnum_list[i])
+                lighttime1.append(lighttime_list[i])
             else:
-                cnt += 1
-                if cnt > 200000:
-                    print("waiting data.......")
-                    cnt = 0
+                carnum2.append(carnum_list[i])
+                lighttime2.append(lighttime_list[i])
+        # 只取10个数据
+        self.carnum1 = carnum1[-10:]
+        self.carnum2 = carnum2[-10:]
+        self.lighttime1 = lighttime1[-10:]
+        self.lighttime2 = lighttime2[-10:]
+        # print(self.carnum1)
+        # print(self.carnum2)
+        self.x1 = np.arange(len(self.carnum1)) + 1
+        self.x2 = np.arange(len(self.carnum2)) + 1
 
-    def showMessageBox(self, msg):
-        QMessageBox.about(self, "结果", str(msg))
-        print("OK!")
+    def PrepareLineCanvas1(self):
+        line1 = Line2D(self.x1, self.carnum1, color='skyblue')
+        line12 = Line2D(self.x1, self.lighttime1, color='orange')
+        self.LineFigure1.ax.cla()
+        self.LineFigure1.ax2.cla()
+        self.set_ax(self.LineFigure1)
+        self.LineFigure1.ax.add_line(line1)
+        self.LineFigure1.ax2.add_line(line12)
+        self.LineFigure1.fig.canvas.draw()
+        self.LineFigure1.fig.canvas.flush_events()
 
-    def inference(self, direction, car_num):
-        """
-        推理
-        :param direction: int，0代表东西方向，1代表南北方向
-        :param car_num: int 车流量
-        :return: 绿灯时长 float
-        """
-        self.child.lineEdit_2.setText("")
-        # select = self.child.comboBox.currentText()
-        # car_num = str(self.child.lineEdit.text())
-        alpha = 10
-        if direction == 0:
-            try:
-                res = compete_light_time(car_num, alpha, direction)
-                self.child.lineEdit_2.setText(str(res))
-                msg = "推理成功"
-                # self.showMessageBox(msg)
-            except Exception:
-                msg = "推理失败"
-                self.showMessageBox(msg)
-                self.child.lineEdit_2.setText("")
-        else:
-            # 南北采用可信度知识
-            res = Cre_Inference_car_num(car_num)
-            self.child.lineEdit_2.setText(str(res))   
-            msg = "推理成功"
-            # self.showMessageBox(msg)
+    def PrepareLineCanvas2(self):
+        line2 = Line2D(self.x1, self.carnum1, color='skyblue')
+        line22 = Line2D(self.x1, self.lighttime1, color='orange')
+        self.LineFigure2.ax.cla()
+        self.LineFigure2.ax2.cla()
+        self.set_ax(self.LineFigure2)
+        self.LineFigure2.ax.add_line(line2)
+        self.LineFigure2.ax2.add_line(line22)
+        self.LineFigure2.fig.canvas.draw()
+        self.LineFigure2.fig.canvas.flush_events()
 
-        return res
+    def PrepareLineCanvas3(self):
+        line3 = Line2D(self.x2, self.carnum2, color='skyblue')
+        line32 = Line2D(self.x2, self.lighttime2, color='orange')
+        self.LineFigure3.ax.cla()
+        self.LineFigure3.ax2.cla()
+        self.set_ax(self.LineFigure3)
+        self.LineFigure3.ax.add_line(line3)
+        self.LineFigure3.ax2.add_line(line32)
+        self.LineFigure3.fig.canvas.draw()
+        self.LineFigure3.fig.canvas.flush_events()
+
+    def PrepareLineCanvas4(self):
+        line4 = Line2D(self.x2, self.carnum2, color='skyblue')
+        line42 = Line2D(self.x2, self.lighttime2, color='orange')
+        self.LineFigure4.ax.cla()
+        self.LineFigure4.ax2.cla()
+        self.set_ax(self.LineFigure4)
+        self.LineFigure4.ax.add_line(line4)
+        self.LineFigure4.ax2.add_line(line42)
+        self.LineFigure4.fig.canvas.draw()
+        self.LineFigure4.fig.canvas.flush_events()
 
 
 # 仿真功能调用
@@ -2290,26 +2502,12 @@ def openExe():
     print("执行exe")
 
 
-##############################################################
-##############################################################
-# 未完成
-def inference_machine():
-    data=querySensorData()
-    # 每次获取最后一条传感器数据，即最新的
-    linemun=data.shape[0]
-    for index,row in data.iterrows():
-        if index == linemun-1:
-            ID=str(row['ID'])
-            get_time=str(row['采集时间'])
-            ewcar=str(row['东西车流量'])
-            sncar=str(row['南北车流量'])
-##############################################################
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = parentWin()
     child1 = childWin1()
+    child2 = childWin2()
     child3 = childWin3()
     child4 = childWin4()
     child5 = childWin5()
@@ -2325,15 +2523,20 @@ if __name__ == '__main__':
     # 主界面
     btn1 = window.main_ui.pushButton
     btn1.clicked.connect(child1.show)
+
     btn2 = window.main_ui.pushButton_2
-    btn2.clicked.connect(openExe)
+    btn2.clicked.connect(child2.show)
+
     btn3 = window.main_ui.pushButton_3
     btn3.clicked.connect(child3.show)
     btn3.clicked.connect(child3.select_new)
+
     btn4 = window.main_ui.pushButton_4
     btn4.clicked.connect(child4.show)
+
     btn5 = window.main_ui.pushButton_5
     btn5.clicked.connect(child5.show)
+
     btn10 = window.main_ui.pushButton_7
     btn10.clicked.connect(child10.show)
 
@@ -2352,14 +2555,6 @@ if __name__ == '__main__':
     btn8.clicked.connect(child8.show)
     btn9 = child6.child.pushButton_3
     btn9.clicked.connect(child9.show)
-
-    # 连接下位机
-    # 解析下位机传上来的数据,返回下位机数据长度、车辆方向、车辆数
-    # length, directionFromLow, carNum = analysis_data_form_down()
-    # if length != 0:
-    #     print("方向(0代表东西，1代表南北）:", directionFromLow, "车流量:", carNum)
-    #     # 组装数据包、传输数据包到下位机
-    #     put_data_to_down(length, carNum)
 
     window.show()
     sys.exit(app.exec_())
