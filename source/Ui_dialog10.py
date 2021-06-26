@@ -26,8 +26,12 @@ class Ui_Dialog10(object):
         self.label.setObjectName("label")
 
         self.pushButton = QtWidgets.QPushButton(Dialog10)
-        self.pushButton.setGeometry(QtCore.QRect(100, 280, 101, 41))
+        self.pushButton.setGeometry(QtCore.QRect(100, 280, 90, 41))
         self.pushButton.setObjectName("pushButton")
+
+        self.pushButton_2 = QtWidgets.QPushButton(Dialog10)
+        self.pushButton_2.setGeometry(QtCore.QRect(200, 280, 90, 41))
+        self.pushButton_2.setObjectName("pushButton")
 
         self.lineEdit = QtWidgets.QLineEdit(Dialog10)
         self.lineEdit.setGeometry(QtCore.QRect(130, 140, 121, 31))
@@ -55,5 +59,6 @@ class Ui_Dialog10(object):
         self.comboBox.setItemText(1, _translate("Dialog10", "南北"))
         self.label.setText(_translate("Dialog10", "车辆方向："))
         self.pushButton.setText(_translate("Dialog10", "推理"))
+        self.pushButton_2.setText(_translate("Dialog10", "解释器表"))
         self.label_2.setText(_translate("Dialog10", "车流量："))
         self.label_3.setText(_translate("Dialog10", "绿灯时长："))

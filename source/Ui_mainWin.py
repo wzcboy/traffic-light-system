@@ -17,28 +17,41 @@ class Ui_MainWindow(object):
         MainWindow.resize(620, 430)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(120, 60, 151, 51))
         self.pushButton.setObjectName("pushButton")
+
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(350, 60, 151, 51))
         self.pushButton_2.setObjectName("pushButton_2")
+
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(120, 150, 151, 51))
         self.pushButton_3.setObjectName("pushButton_3")
+
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_4.setGeometry(QtCore.QRect(350, 150, 151, 51))
         self.pushButton_4.setObjectName("pushButton_4")
+
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(120, 240, 151, 51))
         self.pushButton_5.setObjectName("pushButton_5")
+
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_6.setGeometry(QtCore.QRect(230, 330, 151, 51))
+        self.pushButton_6.setGeometry(QtCore.QRect(350, 330, 151, 51))
         self.pushButton_6.setObjectName("pushButton_6")
+
         self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_7.setGeometry(QtCore.QRect(350, 240, 151, 51))
         self.pushButton_7.setObjectName("pushButton_7")
+
+        self.pushButton_8 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_8.setGeometry(QtCore.QRect(120, 330, 151, 51))
+        self.pushButton_8.setObjectName("pushButton_8")
+
         MainWindow.setCentralWidget(self.centralwidget)
+
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
@@ -56,4 +69,5 @@ class Ui_MainWindow(object):
         self.pushButton_4.setText(_translate("MainWindow", "统计分析"))
         self.pushButton_5.setText(_translate("MainWindow", "知识维护"))
         self.pushButton_6.setText(_translate("MainWindow", "退出系统"))
-        self.pushButton_7.setText(_translate("MainWindow", "推理功能"))
+        self.pushButton_7.setText(_translate("MainWindow", "百度API"))
+        self.pushButton_8.setText(_translate("MainWindow", "推理功能"))
